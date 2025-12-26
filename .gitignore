@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+venv/
+*.pyc
+
+# Env
+.env
+.env.*
+
+# Logs
+*.log
+
+# LLM models
+*.gguf
+models/
+
+# OS
+.DS_Store
+Thumbs.db

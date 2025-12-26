@@ -1,0 +1,61 @@
+import ollama
+
+def phan_loai_voi_trong_so(text):
+    # Ngưỡng chấp nhận (Ví dụ: 0.8 tương đương 80% chắc chắn)
+    CONFIDENCE_THRESHOLD = 0.8
+    
+    # Bước 1: Gọi model phanloai 
+    # Chúng ta để temperature = 0 để kết quả ổn định nhất
+    response = ollama.generate(
+        model='phanloai',
+        prompt=text,
+        stream=False,
+        options={"temperature": 0}
+    )
+    
+    nhan = response['response'].strip().lower().replace(".", "")
+    
+    # Bước 2: Logic Trọng số dựa trên độ dài và từ khóa (Vì Ollama Python SDK chưa trả logprobs trực tiếp)
+    # Chúng ta sẽ tính toán một 'Soft Score'
+    score = 1.0
+    
+    # Nếu nhãn là 'ngoai le', mặc định trọng số thấp để đẩy sang Llama3
+    if "ngoai le" in nhan:
+        score = 0.0
+        
+    # Nếu câu hỏi quá ngắn nhưng nhãn lại là 'hỗ trợ khách hàng' -> Dễ sai, hạ trọng số
+    if len(text.split()) < 3 and "hỗ trợ" in nhan:
+        score -= 0.5
+        
+    # Kiểm tra xem các câu 'vỡ màn hình' hay 'đổi size' có bị AI nhận diện nhầm không
+    tu_khoa_quan_trong = ["vỡ", "màn hình", "size", "đổi", "trả", "lỗi", "hỏng"]
+    if any(word in text.lower() for word in tu_khoa_quan_trong):
+        # Nếu có từ khóa quan trọng mà AI lại phân loại là Ngoai le -> Ép trọng số lên để xử lý
+        if score == 0: score = 0.9 
+
+    return nhan, score
+
+def chatbot_router():
+    print("--- Hệ thống AI Router - Trọng số tự động ---")
+    
+    while True:
+        user_input = input("\nBạn: ").strip()
+        if user_input.lower() in ['exit', 'quit']: break
+
+        nhan, trong_so = phan_loai_voi_trong_so(user_input)
+        
+        print(f" (Hệ thống ước tính độ chính xác: {trong_so*100}%)")
+
+        # QUYẾT ĐỊNH CHỌN MODEL
+        if trong_so >= 0.7 and nhan != "ngoai le":
+            print(f"-> [Hệ thống]: Chuyên môn - Nhóm: {nhan.upper()}")
+        else:
+            print("-> [AI Tự do]: Câu hỏi ngoài chuyên môn. Đang trả lời...")
+            res = ollama.generate(model='llama3:8b', prompt=user_input, stream=True)
+            print("AI trả lời: ", end="", flush=True)
+            for chunk in res:
+                print(chunk['response'], end="", flush=True)
+            print()
+
+if __name__ == "__main__":
+    chatbot_router()
