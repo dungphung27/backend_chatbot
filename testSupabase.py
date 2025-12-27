@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from supabase import create_client
+import ollama
 
 # Load biến môi trường
 load_dotenv()

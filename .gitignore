@@ -17,3 +17,5 @@ models/
 # OS
 .DS_Store
 Thumbs.db
+testSupabase.py
+testPhan.py
