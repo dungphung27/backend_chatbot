@@ -9,6 +9,7 @@ def generateEmbedding(question):
         input=question
     )
     vector = embedding['embeddings'][0]
+    print(f"Do dai: {len(vector)}")
     return vector
 def completion(prompt):
     client = Client(
@@ -21,7 +22,14 @@ def completion(prompt):
         'content': prompt,
     },
     ]
+    full_response = ""
+    
     for part in client.chat('gpt-oss:120b', messages=messages, stream=True):
-        print(part['message']['content'], end='', flush=True)
+        chunk = part['message']['content']
+        print(chunk, end='', flush=True)
+        full_response += chunk
+    print()
+    return full_response
+    
 
     
